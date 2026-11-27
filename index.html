@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>喵账 · 养猫记账</title>
+<meta name="description" content="跟猫说话就能记账：说一句话，自动识别金额和分类；每天没超预算就能拿积分喂猫。">
+<meta name="theme-color" content="#f0913a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="喵账">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#fdf6ec; --card:#fff; --ink:#3b3024; --sub:#9a8b78;
+    --orange:#f0913a; --orange-soft:#ffe3c4; --line:#f0e4d4;
+    --good:#5cb85c; --bad:#e05c5c;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:#e9e2d6; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink); display:flex; justify-content:center;
+  }
+  #app{
+    width:100%; max-width:430px; height:100dvh; background:var(--bg);
+    display:flex; flex-direction:column; position:relative; overflow:hidden;
+    box-shadow:0 0 40px rgba(0,0,0,.12);
+  }
+
+  /* ===== 顶部宠物区 ===== */
+  #petPanel{
+    background:linear-gradient(180deg,#ffe9cf,#fdf6ec);
+    padding:10px 14px 8px; border-bottom:1px solid var(--line); flex:0 0 auto;
+  }
+  .petRow{display:flex; align-items:center; gap:12px}
+  #cat{
+    font-size:46px; line-height:1; width:64px; height:64px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; user-select:none; transition:transform .15s;
+  }
+  #cat.bounce{transform:scale(1.18) rotate(-4deg)}
+  #cat.eating{animation:eat .5s ease-in-out 3}
+  @keyframes eat{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  .petInfo{flex:1; min-width:0}
+  .petName{font-weight:700; font-size:15px; display:flex; align-items:center; gap:6px}
+  .lv{background:var(--orange); color:#fff; font-size:11px; padding:1px 6px; border-radius:8px; font-weight:600}
+  .bars{margin-top:5px; display:flex; flex-direction:column; gap:3px}
+  .bar{height:7px; background:#efe1cf; border-radius:4px; overflow:hidden}
+  .bar > i{display:block; height:100%; border-radius:4px; transition:width .4s}
+  #hungerFill{background:linear-gradient(90deg,#ffb457,#f0913a)}
+  #expFill{background:linear-gradient(90deg,#8ec9f0,#5aa9e6)}
+  .barLabel{font-size:10px; color:var(--sub); display:flex; justify-content:space-between}
+
+  .statRow{display:flex; gap:8px; margin-top:9px}
+  .stat{
+    flex:1; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:5px 8px; text-align:center;
+  }
+  .stat b{display:block; font-size:14px}
+  .stat span{font-size:10px; color:var(--sub)}
+  .stat.hi b{color:var(--orange)}
+
+  /* ===== 聊天区 ===== */
+  #chat{
+    flex:1 1 auto; overflow-y:auto; padding:12px 12px 6px;
+    display:flex; flex-direction:column; gap:9px; scroll-behavior:smooth;
+  }
+  .msg{max-width:82%; padding:9px 12px; border-radius:14px; font-size:14px; line-height:1.5; word-break:break-word}
+  .msg.cat{align-self:flex-start; background:#fff; border:1px solid var(--line); border-bottom-left-radius:4px}
+  .msg.me{align-self:flex-end; background:var(--orange); color:#fff; border-bottom-right-radius:4px}
+  .msg.sys{align-self:center; background:#efe7da; color:var(--sub); font-size:12px; padding:4px 10px; border-radius:10px}
+
+  /* 待确认卡片 */
+  .confirm{
+    align-self:flex-start; background:#fff; border:2px solid var(--orange-soft);
+    border-radius:14px; padding:10px 12px; width:82%; font-size:13px;
+  }
+  .confirm .t{font-weight:700; margin-bottom:7px; color:var(--orange)}
+  .confirmRow{display:flex; align-items:center; gap:6px; margin-bottom:6px}
+  .confirmRow label{color:var(--sub); font-size:12px; width:38px; flex:0 0 auto}
+  .confirm input, .confirm select{
+    flex:1; min-width:0; padding:5px 7px; border:1px solid var(--line);
+    border-radius:7px; font-size:13px; background:#fffdf9; color:var(--ink);
+  }
+  .confirm input:focus,.confirm select:focus{outline:2px solid var(--orange-soft)}
+  .confirmBtns{display:flex; gap:7px; margin-top:8px}
+  .btn{
+    flex:1; padding:7px; border-radius:9px; border:none; font-size:13px;
+    font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .btn.ok{background:var(--orange); color:#fff}
+  .btn.no{background:#f2ece2; color:var(--sub)}
+
+  /* ===== 底部输入 ===== */
+  #inputBar{
+    flex:0 0 auto; border-top:1px solid var(--line); background:#fff;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom)); display:flex; gap:8px; align-items:flex-end;
+  }
+  #input{
+    flex:1; resize:none; border:1px solid var(--line); border-radius:18px;
+    padding:9px 14px; font-size:14px; font-family:inherit; line-height:1.4;
+    max-height:90px; background:#fdfaf5; color:var(--ink);
+  }
+  #input:focus{outline:2px solid var(--orange-soft); background:#fff}
+  #send{
+    flex:0 0 auto; width:44px; height:44px; border-radius:50%; border:none;
+    background:var(--orange); color:#fff; font-size:18px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #send:disabled{background:#e8dccb; cursor:not-allowed}
+
+  /* ===== 底部 tab / 账本抽屉 ===== */
+  #tabs{display:flex; border-top:1px solid var(--line); background:#fff}
+  #tabs button{
+    flex:1; padding:9px 0; border:none; background:none; font-size:12px;
+    font-family:inherit; color:var(--sub); cursor:pointer;
+  }
+  #tabs button.on{color:var(--orange); font-weight:700}
+
+  .drawer{
+    position:absolute; left:0; right:0; bottom:0; top:32%;
+    background:var(--bg); border-top-left-radius:18px; border-top-right-radius:18px;
+    box-shadow:0 -8px 30px rgba(0,0,0,.15); transform:translateY(105%);
+    transition:transform .28s ease; display:flex; flex-direction:column; z-index:20;
+  }
+  .drawer.open{transform:translateY(0)}
+  .drawerHead{
+    padding:12px 16px 8px; display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--line);
+  }
+  .drawerHead b{font-size:15px}
+  .drawerHead button{border:none;background:none;font-size:20px;color:var(--sub);cursor:pointer}
+  .drawerBody{flex:1; overflow-y:auto; padding:10px 14px 20px}
+
+  .sumCard{
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:12px; margin-bottom:12px;
+  }
+  .sumRow{display:flex; justify-content:space-between; font-size:13px; padding:4px 0}
+  .sumRow b{font-size:15px}
+  .over{color:var(--bad)}
+  .under{color:var(--good)}
+
+  .tx{
+    display:flex; align-items:center; gap:10px; background:#fff;
+    border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:7px;
+  }
+  .tx .cico{font-size:19px}
+  .tx .tmain{flex:1; min-width:0}
+  .tx .tnote{font-size:13px; font-weight:600}
+  .tx .tmeta{font-size:11px; color:var(--sub); margin-top:1px}
+  .tx .tamt{font-weight:700; font-size:14px}
+  .tx .del{border:none;background:none;color:#c9bcaa;font-size:16px;cursor:pointer;padding:2px 4px}
+  .empty{text-align:center; color:var(--sub); font-size:13px; padding:26px 0}
+  .hint{font-size:11px; color:var(--sub); margin:2px 0 10px; line-height:1.6}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 宠物区 -->
+  <header id="petPanel">
+    <div class="petRow">
+      <div id="cat">🐱</div>
+      <div class="petInfo">
+        <div class="petName"><span id="petName">年糕</span><span class="lv" id="petLv">Lv.1</span></div>
+        <div class="bars">
+          <div class="barLabel"><span>饱腹度</span><span id="hungerTxt">80%</span></div>
+          <div class="bar"><i id="hungerFill" style="width:80%"></i></div>
+          <div class="barLabel" style="margin-top:3px"><span>经验</span><span id="expTxt">0/50</span></div>
+          <div class="bar"><i id="expFill" style="width:0%"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="statRow">
+      <div class="stat hi"><b id="statPoints">0</b><span>积分</span></div>
+      <div class="stat"><b id="statToday">0</b><span>今日支出</span></div>
+      <div class="stat"><b id="statBudget">100</b><span>今日预算</span></div>
+      <div class="stat"><b id="statMonth">0</b><span>本月支出</span></div>
+    </div>
+  </header>
+
+  <!-- 聊天 -->
+  <main id="chat"></main>
+
+  <!-- 输入 -->
+  <div id="inputBar">
+    <textarea id="input" rows="1" placeholder="跟年糕说说今天花了什么…"></textarea>
+    <button id="send" disabled>➤</button>
+  </div>
+
+  <!-- tab -->
+  <div id="tabs">
+    <button class="on" data-tab="chat">💬 和猫说话</button>
+    <button data-tab="book">📒 账本</button>
+    <button data-tab="feed">🍚 喂猫</button>
+  </div>
+
+  <!-- 抽屉：账本 -->
+  <div class="drawer" id="drawerBook">
+    <div class="drawerHead"><b>账本</b><button data-close>✕</button></div>
+    <div class="drawerBody">
+      <div class="sumCard">
+        <div class="sumRow"><span>今日支出</span><span><b id="dToday">¥0</b> <span id="dTodayState"></span></span></div>
+        <div class="sumRow"><span>今日预算</span><span id="dDailyLimit">¥100</span></div>
+        <div class="sumRow"><span>本月支出</span><span><b id="dMonth">¥0</b> <span id="dMonthState"></span></span></div>
+        <div class="sumRow"><span>本月预算</span><span id="dMonthlyLimit">¥3000</span></div>
+        <div class="sumRow" style="border-top:1px dashed var(--line); margin-top:6px; padding-top:8px">
+          <span>改预算</span>
+          <span>
+            日 <input id="inpDaily" type="number" style="width:62px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;font-size:12px">
+            月 <input id="inpMonthly" type="number" style="width:72px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;font-size:12px">
+          </span>
+        </div>
+      </div>
+      <div class="hint">提示：积分规则 —— 当天支出没超预算，得 10 分；连续达标有加成。</div>
+      <div id="txList"></div>
+    </div>
+  </div>
+
+  <!-- 抽屉：喂猫 -->
+  <div class="drawer" id="drawerFeed">
+    <div class="drawerHead"><b>喂猫</b><button data-close>✕</button></div>
+    <div class="drawerBody">
+      <div class="sumCard" style="text-align:center">
+        <div style="font-size:52px" id="feedCat">🐱</div>
+        <div style="margin:8px 0 4px;font-weight:700" id="feedName">年糕</div>
+        <div class="hint" id="feedDesc">它看起来还不错。</div>
+      </div>
+      <div class="sumCard">
+        <div class="sumRow"><span>当前积分</span><b id="feedPoints">0</b></div>
+        <div class="sumRow"><span>猫粮价格</span><span>10 积分 / 份</span></div>
+        <div class="sumRow"><span>饱腹度</span><span id="feedHunger">80%</span></div>
+      </div>
+      <button class="btn ok" id="btnFeed" style="width:100%;padding:12px;font-size:15px">🍚 喂一份猫粮（-10 积分）</button>
+      <div class="hint" style="margin-top:10px">喂一次：饱腹度 +20，经验 +10。经验满了会升级。</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   喵账 MVP · 单文件网页版
+   核心：本地规则解析「一句话 → 一笔账」，不需要联网
+   ========================================================= */
+
+/* ---------- 分类词典 ---------- */
+const CATEGORIES = [
+  { key:'餐饮', icon:'🍜', words:['吃','饭','面','火锅','奶茶','咖啡','coffee','外卖','早餐','午餐','晚餐','菜','零食','水果','牛肉面','烧烤','喝','饭堂','食堂'] },
+  { key:'交通', icon:'🚕', words:['打车','滴滴','地铁','公交','加油','油费','车费','高铁','机票','停车','地铁卡','火车'] },
+  { key:'购物', icon:'🛍️', words:['买','淘宝','京东','拼多多','衣服','鞋','衬衫','T恤','充电器','超市','羽绒服','耳机','猫粮','日用品'] },
+  { key:'娱乐', icon:'🎬', words:['电影','游戏','唱歌','KTV','演出','门票','会员','订阅','视频','健身'] },
+  { key:'住房', icon:'🏠', words:['房租','水电','物业','燃气','水费','电费','宽带'] },
+  { key:'其他', icon:'📌', words:[] }
+];
+
+/* 不算记账的说法 */
+const NON_TX = ['工资','到账','发工资','省了','没吃','没花','收入','退款','退了','赚了','中奖','报销','借钱','还钱','瘦了'];
+
+/* ---------- 状态 ---------- */
+const LS_KEY = 'miaoZhang.v1';
+let state = null;
+
+function defaultState(){
+  return {
+    pet:{ name:'年糕', hunger:80, exp:0, level:1, lastTick:Date.now() },
+    points:0,
+    dailyLimit:100,
+    monthlyLimit:3000,
+    transactions:[],        // {id, amount, category, note, date(YYYY-MM-DD), ts}
+    messages:[],            // {role:'cat'|'me'|'sys', text}
+    pending:null,           // 待确认的一笔
+    lastAwardDate:null,
+    streak:0,
+    lastStreakDate:null
+  };
+}
+
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ state = Object.assign(defaultState(), JSON.parse(raw)); return; }
+  }catch(e){}
+  state = defaultState();
+}
+
+/* ---------- 工具 ---------- */
+const $ = s => document.querySelector(s);
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const monthStr = () => todayStr().slice(0,7);
+const fmt = n => (Math.round(n*100)/100).toString();
+const uid = () => Math.random().toString(36).slice(2,9);
+
+/* ---------- 中文数字 → 阿拉伯 ---------- */
+function cn2num(s){
+  const d={'零':0,'〇':0,'一':1,'壹':1,'二':2,'两':2,'贰':2,'三':3,'叁':3,'四':4,'肆':4,'五':5,'伍':5,'六':6,'陆':6,'七':7,'柒':7,'八':8,'捌':8,'九':9,'玖':9};
+  const u={'十':10,'拾':10,'百':100,'佰':100,'千':1000,'仟':1000};
+  let section=0, num=0, hasNum=false;
+  for(const ch of s){
+    if(d[ch]!==undefined){ num=d[ch]; hasNum=true; }
+    else if(u[ch]){
+      if(num===0) num=1;
+      section += num*u[ch];
+      num=0;
+      hasNum=true;
+    } else return null;
+  }
+  if(!hasNum) return null;
+  return section+num || null;
+}
+
+/* ---------- 从一段话里抽金额 ---------- */
+function extractAmount(seg){
+  // 1) 「46块8」这种口语小数
+  let m = seg.match(/(\d{1,6})\s*块\s*(\d)\s*(?:元|钱|$|[，。！？,!?\s])/);
+  if(m) return parseFloat(m[1] + '.' + m[2]);
+
+  // 2) 阿拉伯数字 + 金额单位
+  m = seg.match(/(\d+(?:\.\d+)?)\s*(?:元|块|块钱|人民币|rmb|RMB|¥|￥)/);
+  if(m) return parseFloat(m[1]);
+
+  // 3) 中文数字 + 金额单位（容忍「三十多」）
+  m = seg.match(/([零〇一壹二两贰三叁四肆五伍六陆七柒八捌九玖十拾百佰千仟]{1,8})\s*多?\s*(?:元|块|块钱)/);
+  if(m){ const v = cn2num(m[1]); if(v) return v; }
+
+  // 4) 「花了三十多」「打完折二百六」这类没单位的口语数字
+  m = seg.match(/(?:花了|花|用了|付了|折|一共|总共)\s*([零〇一壹二两贰三叁四肆五伍六陆七柒八捌九玖十拾百佰千仟]{1,8})\s*多?/);
+  if(m){ const v = cn2num(m[1]); if(v) return v; }
+
+  // 5) 「人均80」「一共99」这类
+  m = seg.match(/(?:人均|一共|总共|合计|共)\s*(\d+(?:\.\d+)?)/);
+  if(m) return parseFloat(m[1]);
+
+  // 6) 裸数字（排除日期、电话）
+  m = seg.match(/(?<![\d\-:：/])(\d{1,6}(?:\.\d{1,2})?)(?![\d\-:：/])/);
+  if(m) return parseFloat(m[1]);
+
+  return null;
+}
+
+/* ---------- 分类 ---------- */
+function classify(seg){
+  for(const c of CATEGORIES){
+    for(const w of c.words){
+      if(seg.includes(w)) return c.key;
+    }
+  }
+  return '其他';
+}
+
+/* ---------- 日期识别 ---------- */
+function resolveDate(seg){
+  const d = new Date();
+  if(seg.includes('前天')){ d.setDate(d.getDate()-2); }
+  else if(seg.includes('昨天')||seg.includes('昨晚')){ d.setDate(d.getDate()-1); }
+  else if(seg.includes('上周末')){ d.setDate(d.getDate() - ((d.getDay()+7-6)%7 || 7)); }
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ---------- 核心：解析一句话 ---------- */
+function parseMessage(text){
+  const raw = (text||'').trim();
+  if(!raw) return { kind:'empty' };
+
+  // 整句是非记账
+  if(NON_TX.some(w => raw.includes(w))) return { kind:'nontx' };
+
+  // 拆成分句（，,、；; 和 然后/还有）
+  const segs = raw.split(/[，,；;、]|然后|还有/).map(s=>s.trim()).filter(Boolean);
+  // 整句级别的分类，用来给"没上下文"的分句兜底
+  const sentenceCat = classify(raw);
+  const out = [];
+
+  for(const seg of segs){
+    if(NON_TX.some(w => seg.includes(w))) continue;
+    const amount = extractAmount(seg);
+    if(amount === null) continue;
+    let cat = classify(seg);
+    if(cat === '其他' && sentenceCat !== '其他') cat = sentenceCat;
+    out.push({
+      amount,
+      category: cat,
+      note: seg.slice(0, 18),
+      date: resolveDate(seg)
+    });
+  }
+
+  if(out.length === 0){
+    // 有分句但没金额 → 追问
+    return { kind:'needAmount', text: raw };
+  }
+  return { kind:'tx', items: out };
+}
+
+/* ---------- 记账 ---------- */
+function addTransaction(t){
+  state.transactions.push({
+    id: uid(),
+    amount: t.amount,
+    category: t.category,
+    note: t.note,
+    date: t.date,
+    ts: Date.now()
+  });
+}
+
+function todaySpend(){
+  const d = todayStr();
+  return state.transactions.filter(t=>t.date===d).reduce((a,b)=>a+b.amount,0);
+}
+function monthSpend(){
+  const m = monthStr();
+  return state.transactions.filter(t=>t.date.startsWith(m)).reduce((a,b)=>a+b.amount,0);
+}
+
+/* ---------- 积分 ---------- */
+function checkAndAwardPoints(){
+  const d = todayStr();
+  if(state.lastAwardDate === d) return;          // 今天已结算
+  const spent = todaySpend();
+  if(spent > state.dailyLimit) return;           // 超预算不给
+
+  // 连续达标
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const yStr = `${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;
+  if(state.lastStreakDate === yStr) state.streak = (state.streak||0)+1;
+  else state.streak = 1;
+
+  let pts = 10;
+  if(state.streak >= 3) pts += 5;
+  if(state.streak >= 7) pts += 5;
+
+  state.points += pts;
+  state.lastAwardDate = d;
+  state.lastStreakDate = d;
+
+  addCatMsg(`🎉 今天没超预算！+${pts} 积分${state.streak>1?`（连续 ${state.streak} 天）`:''}`);
+}
+
+/* ---------- 宠物 ---------- */
+function tickPet(){
+  const now = Date.now();
+  const hours = (now - (state.pet.lastTick||now)) / 3600000;
+  if(hours >= 1){
+    const drop = Math.floor(hours) * 1;
+    state.pet.hunger = Math.max(0, Math.min(100, state.pet.hunger - drop));
+    state.pet.lastTick = now;
+  }
+}
+
+const EXP_PER_LEVEL = 50;
+function feedPet(){
+  if(state.points < 10){ addCatMsg('积分不够啦，先省着点花，达标就能攒积分～'); return false; }
+  state.points -= 10;
+  state.pet.hunger = Math.min(100, state.pet.hunger + 20);
+  state.pet.exp += 10;
+  while(state.pet.exp >= state.pet.level * EXP_PER_LEVEL){
+    state.pet.exp -= state.pet.level * EXP_PER_LEVEL;
+    state.pet.level += 1;
+    addCatMsg(`✨ ${state.pet.name}升级了！现在是 Lv.${state.pet.level}`);
+  }
+  state.pet.lastTick = Date.now();
+  return true;
+}
+
+/* ---------- 渲染 ---------- */
+function catFace(){
+  const h = state.pet.hunger;
+  if(h >= 70) return '😺';
+  if(h >= 40) return '🐱';
+  if(h >= 15) return '😿';
+  return '😾';
+}
+
+function renderPet(){
+  const h = state.pet.hunger;
+  const cat = $('#cat'); cat.textContent = catFace();
+  $('#petName').textContent = state.pet.name;
+  $('#petLv').textContent = 'Lv.' + state.pet.level;
+  $('#hungerFill').style.width = h + '%';
+  $('#hungerTxt').textContent = h + '%';
+  const need = state.pet.level * EXP_PER_LEVEL;
+  $('#expFill').style.width = Math.min(100,(state.pet.exp/need)*100) + '%';
+  $('#expTxt').textContent = `${state.pet.exp}/${need}`;
+
+  $('#statPoints').textContent = state.points;
+  $('#statToday').textContent = fmt(todaySpend());
+  $('#statBudget').textContent = state.dailyLimit;
+  $('#statMonth').textContent = fmt(monthSpend());
+
+  // 喂猫抽屉
+  $('#feedCat').textContent = catFace();
+  $('#feedName').textContent = state.pet.name;
+  $('#feedPoints').textContent = state.points;
+  $('#feedHunger').textContent = h + '%';
+  $('#feedDesc').textContent =
+    h >= 70 ? '它看起来很满足，正在打呼噜。' :
+    h >= 40 ? '它看起来还行，但有点想吃东西了。' :
+    h >= 15 ? '它开始蹭你的手，好像在说饿了。' :
+              '它趴着不动了……快喂点东西吧。';
+}
+
+function addMsg(role, text){
+  state.messages.push({ role, text });
+  renderChat();
+}
+
+function addCatMsg(text){ addMsg('cat', text); }
+
+function renderChat(){
+  const box = $('#chat');
+  box.innerHTML = '';
+  for(const m of state.messages){
+    const div = document.createElement('div');
+    div.className = 'msg ' + (m.role==='me'?'me':m.role==='sys'?'sys':'cat');
+    div.textContent = m.text;
+    box.appendChild(div);
+  }
+  // 待确认卡片
+  if(state.pending && state.pending.kind === 'tx'){
+    state.pending.items.forEach((it, idx) => {
+      box.appendChild(buildConfirmCard(it, idx));
+    });
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+function buildConfirmCard(it, idx){
+  const wrap = document.createElement('div');
+  wrap.className = 'confirm';
+  wrap.innerHTML = `
+    <div class="t">记一笔？</div>
+    <div class="confirmRow"><label>金额</label><input type="number" step="0.01" value="${it.amount}"></div>
+    <div class="confirmRow"><label>分类</label>
+      <select>
+        ${CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===it.category?'selected':''}>${c.icon} ${c.key}</option>`).join('')}
+      </select>
+    </div>
+    <div class="confirmRow"><label>日期</label><input type="date" value="${it.date}"></div>
+    <div class="confirmBtns">
+      <button class="btn no">不记了</button>
+      <button class="btn ok">确认记账</button>
+    </div>`;
+  const [btnNo, btnOk] = wrap.querySelectorAll('.confirmBtns button');
+  btnNo.onclick = () => {
+    removePending(idx);
+  };
+  btnOk.onclick = () => {
+    const amt = parseFloat(wrap.querySelector('input[type=number]').value);
+    const cat = wrap.querySelector('select').value;
+    const date = wrap.querySelector('input[type=date]').value || todayStr();
+    if(!(amt > 0)){ alert('金额要大于 0'); return; }
+    addTransaction({ amount:amt, category:cat, note:it.note, date });
+    removePending(idx);
+    addCatMsg(`记好了：${cat} ¥${fmt(amt)}（${date}）。`);
+    save();
+    checkAndAwardPoints();
+    renderAll(); save();
+  };
+  return wrap;
+}
+
+function removePending(idx){
+  if(!state.pending) return;
+  state.pending.items.splice(idx,1);
+  if(state.pending.items.length === 0) state.pending = null;
+  save(); renderAll();
+}
+
+function renderBook(){
+  const spent = todaySpend(), mspent = monthSpend();
+  $('#dToday').textContent = '¥' + fmt(spent);
+  $('#dMonth').textContent = '¥' + fmt(mspent);
+  $('#dDailyLimit').textContent = '¥' + state.dailyLimit;
+  $('#dMonthlyLimit').textContent = '¥' + state.monthlyLimit;
+  $('#dTodayState').innerHTML = spent <= state.dailyLimit
+    ? '<span class="under">✓ 没超</span>' : '<span class="over">✗ 超了</span>';
+  $('#dMonthState').innerHTML = mspent <= state.monthlyLimit
+    ? '<span class="under">✓ 没超</span>' : '<span class="over">✗ 超了</span>';
+  $('#inpDaily').value = state.dailyLimit;
+  $('#inpMonthly').value = state.monthlyLimit;
+
+  const list = $('#txList');
+  const items = [...state.transactions].sort((a,b)=> b.ts-a.ts);
+  if(items.length === 0){
+    list.innerHTML = '<div class="empty">还没有账目。跟年糕说一句试试～</div>';
+    return;
+  }
+  list.innerHTML = items.map(t=>{
+    const icon = (CATEGORIES.find(c=>c.key===t.category)||{icon:'📌'}).icon;
+    return `<div class="tx" data-id="${t.id}">
+      <span class="cico">${icon}</span>
+      <span class="tmain">
+        <div class="tnote">${escapeHtml(t.note||t.category)}</div>
+        <div class="tmeta">${t.category} · ${t.date}</div>
+      </span>
+      <span class="tamt">-¥${fmt(t.amount)}</span>
+      <button class="del" title="删除">🗑</button>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.del').forEach(btn=>{
+    btn.onclick = () => {
+      const id = btn.closest('.tx').dataset.id;
+      state.transactions = state.transactions.filter(t=>t.id!==id);
+      save(); renderAll();
+    };
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderAll(){
+  tickPet();
+  renderPet();
+  renderChat();
+  renderBook();
+}
+
+/* ---------- 交互 ---------- */
+function appendMe(text){ addMsg('me', text); }
+
+function handleSend(){
+  const inp = $('#input');
+  const text = inp.value.trim();
+  if(!text) return;
+  inp.value = '';
+  autoGrow();
+  $('#send').disabled = true;
+
+  appendMe(text);
+
+  const r = parseMessage(text);
+  if(r.kind === 'nontx'){
+    addCatMsg('这句我就不记账啦，听起来不像是花钱。');
+  } else if(r.kind === 'needAmount'){
+    addCatMsg('花了多少钱呀？告诉我数字我就记上。');
+  } else if(r.kind === 'tx'){
+    state.pending = r;
+    addCatMsg(r.items.length > 1
+      ? `听懂了 ${r.items.length} 笔，确认一下？`
+      : '听懂了，确认一下？');
+  } else {
+    addCatMsg('嗯？再说具体点～');
+  }
+  save(); renderAll();
+}
+
+function autoGrow(){
+  const t = $('#input');
+  t.style.height = 'auto';
+  t.style.height = Math.min(90, t.scrollHeight) + 'px';
+  $('#send').disabled = !t.value.trim();
+}
+
+function openDrawer(id){
+  document.querySelectorAll('.drawer').forEach(d=>{
+    if(d.id===id) d.classList.add('open');
+    else d.classList.remove('open');
+  });
+}
+function closeDrawers(){
+  document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('on'));
+  document.querySelector('#tabs button[data-tab="chat"]').classList.add('on');
+}
+
+/* ---------- 启动 ---------- */
+function init(){
+  load();
+  tickPet();
+
+  // 首次欢迎
+  if(state.messages.length === 0){
+    state.messages.push({role:'cat', text:'喵～我是年糕。今天花了什么，跟我说说？'});
+    state.messages.push({role:'cat', text:'比如：中午吃了碗牛肉面38块'});
+  }
+
+  $('#input').addEventListener('input', autoGrow);
+  $('#input').addEventListener('keydown', e=>{
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }
+  });
+  $('#send').onclick = handleSend;
+
+  document.querySelectorAll('#tabs button').forEach(btn=>{
+    btn.onclick = () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      if(tab === 'book') openDrawer('drawerBook');
+      else if(tab === 'feed') openDrawer('drawerFeed');
+      else closeDrawers();
+    };
+  });
+  document.querySelectorAll('[data-close]').forEach(b=> b.onclick = closeDrawers);
+
+  // 喂猫
+  $('#btnFeed').onclick = () => {
+    if(feedPet()){
+      const cat = $('#cat');
+      cat.classList.add('eating');
+      setTimeout(()=>cat.classList.remove('eating'), 1600);
+      addCatMsg('好好吃！谢谢你～');
+      save(); renderAll();
+    } else { renderAll(); }
+  };
+
+  // 点猫
+  $('#cat').onclick = () => {
+    const cat = $('#cat');
+    cat.classList.add('bounce');
+    setTimeout(()=>cat.classList.remove('bounce'), 200);
+    const h = state.pet.hunger;
+    addCatMsg(h >= 70 ? '喵～（蹭蹭你的手）' : h >= 40 ? '喵？（歪头看你）' : '喵……（有点饿）');
+    save(); renderAll();
+  };
+
+  // 改预算
+  const saveBudget = () => {
+    const d = parseFloat($('#inpDaily').value), m = parseFloat($('#inpMonthly').value);
+    if(d > 0) state.dailyLimit = d;
+    if(m > 0) state.monthlyLimit = m;
+    save(); renderAll();
+  };
+  $('#inpDaily').onchange = saveBudget;
+  $('#inpMonthly').onchange = saveBudget;
+
+  autoGrow();
+  renderAll();
+}
+
+init();
+</script>
+<script>
+/* PWA：注册 Service Worker（离线可用） */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
