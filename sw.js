@@ -1,5 +1,5 @@
-/* 喵账 Service Worker：缓存应用外壳，离线也能打开 */
-const CACHE = 'miaozhang-v1';
+﻿/* 喵账 Service Worker：缓存应用外壳，离线也能打开 */
+const CACHE = 'miaozhang-v3';
 const ASSETS = [
   './',
   './index.html',

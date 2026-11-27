@@ -13,6 +13,15 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="description" content="跟猫说话就能记账：说一句话，自动识别金额和分类；每天没超预算就能拿积分喂猫。">
+<meta name="theme-color" content="#f0913a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="喵账">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <style>
   :root{
     --bg:#fdf6ec; --card:#fff; --ink:#3b3024; --sub:#9a8b78;
@@ -31,225 +40,355 @@
     box-shadow:0 0 40px rgba(0,0,0,.12);
   }
 
-  /* ===== 顶部宠物区 ===== */
+  /* ===== 宠物区 ===== */
   #petPanel{
     background:linear-gradient(180deg,#ffe9cf,#fdf6ec);
-    padding:10px 14px 8px; border-bottom:1px solid var(--line); flex:0 0 auto;
+    padding:6px 12px 7px; border-bottom:1px solid var(--line); flex:0 0 auto;
   }
-  .petRow{display:flex; align-items:center; gap:12px}
-  #cat{
-    font-size:46px; line-height:1; width:64px; height:64px; flex:0 0 auto;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; user-select:none; transition:transform .15s;
+  .petRow{display:flex; align-items:center; gap:6px}
+  #catWrap{
+    width:96px; height:88px; flex:0 0 auto; cursor:pointer; user-select:none;
+    display:flex; align-items:flex-end; justify-content:center;
   }
-  #cat.bounce{transform:scale(1.18) rotate(-4deg)}
-  #cat.eating{animation:eat .5s ease-in-out 3}
-  @keyframes eat{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  .cat-svg{width:96px;height:88px;overflow:visible}
+  .cat-svg .body-anim{animation:breathe 3.4s ease-in-out infinite; transform-box:fill-box; transform-origin:center bottom}
+  @keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1.6px) scale(1.014)}}
+  .cat-svg .tail{transform-box:fill-box; transform-origin:left center; animation:wag 2.4s ease-in-out infinite}
+  @keyframes wag{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(13deg)}}
+  .cat-svg .eyes-normal{transform-box:fill-box; transform-origin:center; animation:blink 5.6s infinite}
+  @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.06)}}
+  .cat-svg .eyes-happy,.cat-svg .eyes-hungry{display:none}
+  .cat-svg.mood-happy .eyes-normal{display:none}
+  .cat-svg.mood-happy .eyes-happy{display:block}
+  .cat-svg.mood-hungry .eyes-normal{display:none}
+  .cat-svg.mood-hungry .eyes-hungry{display:block}
+  .cat-svg .tear{display:none}
+  .cat-svg.mood-starving .tear{display:block}
+  #catWrap.pop .cat-svg{animation:pop .34s ease}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.14) rotate(-3deg)}100%{transform:scale(1)}}
+
   .petInfo{flex:1; min-width:0}
-  .petName{font-weight:700; font-size:15px; display:flex; align-items:center; gap:6px}
-  .lv{background:var(--orange); color:#fff; font-size:11px; padding:1px 6px; border-radius:8px; font-weight:600}
+  .petNameRow{display:flex; align-items:center; gap:6px}
+  .petName{font-weight:800; font-size:16px; cursor:pointer}
+  .lv{background:var(--orange); color:#fff; font-size:11px; padding:1px 7px; border-radius:8px; font-weight:700}
+  .rename{font-size:11px;color:var(--sub);cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:0 5px}
   .bars{margin-top:5px; display:flex; flex-direction:column; gap:3px}
-  .bar{height:7px; background:#efe1cf; border-radius:4px; overflow:hidden}
-  .bar > i{display:block; height:100%; border-radius:4px; transition:width .4s}
+  .barLabel{font-size:10px; color:var(--sub); display:flex; justify-content:space-between}
+  .bar{height:6px; background:#efe1cf; border-radius:4px; overflow:hidden}
+  .bar > i{display:block; height:100%; border-radius:4px; transition:width .45s}
   #hungerFill{background:linear-gradient(90deg,#ffb457,#f0913a)}
   #expFill{background:linear-gradient(90deg,#8ec9f0,#5aa9e6)}
-  .barLabel{font-size:10px; color:var(--sub); display:flex; justify-content:space-between}
 
-  .statRow{display:flex; gap:8px; margin-top:9px}
-  .stat{
-    flex:1; background:#fff; border:1px solid var(--line); border-radius:10px;
-    padding:5px 8px; text-align:center;
-  }
-  .stat b{display:block; font-size:14px}
-  .stat span{font-size:10px; color:var(--sub)}
+  .statRow{display:flex; gap:6px; margin-top:7px}
+  .stat{flex:1; background:#fff; border:1px solid var(--line); border-radius:9px; padding:3px 4px; text-align:center; cursor:pointer}
+  .stat b{display:block; font-size:13.5px; line-height:1.3}
+  .stat span{font-size:9.5px; color:var(--sub)}
   .stat.hi b{color:var(--orange)}
 
-  /* ===== 聊天区 ===== */
-  #chat{
-    flex:1 1 auto; overflow-y:auto; padding:12px 12px 6px;
-    display:flex; flex-direction:column; gap:9px; scroll-behavior:smooth;
-  }
+  /* ===== 聊天 ===== */
+  #chat{flex:1 1 auto; overflow-y:auto; padding:11px 11px 6px; display:flex; flex-direction:column; gap:8px}
   .msg{max-width:82%; padding:9px 12px; border-radius:14px; font-size:14px; line-height:1.5; word-break:break-word}
   .msg.cat{align-self:flex-start; background:#fff; border:1px solid var(--line); border-bottom-left-radius:4px}
   .msg.me{align-self:flex-end; background:var(--orange); color:#fff; border-bottom-right-radius:4px}
-  .msg.sys{align-self:center; background:#efe7da; color:var(--sub); font-size:12px; padding:4px 10px; border-radius:10px}
+  .msg.sys{align-self:center; background:#efe7da; color:var(--sub); font-size:12px; padding:4px 10px; border-radius:10px; text-align:center; max-width:92%}
 
-  /* 待确认卡片 */
-  .confirm{
-    align-self:flex-start; background:#fff; border:2px solid var(--orange-soft);
-    border-radius:14px; padding:10px 12px; width:82%; font-size:13px;
-  }
+  .confirm{align-self:flex-start; background:#fff; border:2px solid var(--orange-soft); border-radius:14px; padding:10px 12px; width:84%; font-size:13px}
   .confirm .t{font-weight:700; margin-bottom:7px; color:var(--orange)}
   .confirmRow{display:flex; align-items:center; gap:6px; margin-bottom:6px}
   .confirmRow label{color:var(--sub); font-size:12px; width:38px; flex:0 0 auto}
-  .confirm input, .confirm select{
-    flex:1; min-width:0; padding:5px 7px; border:1px solid var(--line);
-    border-radius:7px; font-size:13px; background:#fffdf9; color:var(--ink);
-  }
-  .confirm input:focus,.confirm select:focus{outline:2px solid var(--orange-soft)}
+  .confirm input,.confirm select{flex:1;min-width:0;padding:5px 7px;border:1px solid var(--line);border-radius:7px;font-size:13px;background:#fffdf9;color:var(--ink);font-family:inherit}
   .confirmBtns{display:flex; gap:7px; margin-top:8px}
-  .btn{
-    flex:1; padding:7px; border-radius:9px; border:none; font-size:13px;
-    font-weight:600; cursor:pointer; font-family:inherit;
-  }
-  .btn.ok{background:var(--orange); color:#fff}
-  .btn.no{background:#f2ece2; color:var(--sub)}
+  .btn{flex:1;padding:8px;border-radius:9px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn.ok{background:var(--orange);color:#fff}
+  .btn.no{background:#f2ece2;color:var(--sub)}
 
-  /* ===== 底部输入 ===== */
-  #inputBar{
-    flex:0 0 auto; border-top:1px solid var(--line); background:#fff;
-    padding:8px 10px calc(8px + env(safe-area-inset-bottom)); display:flex; gap:8px; align-items:flex-end;
-  }
-  #input{
-    flex:1; resize:none; border:1px solid var(--line); border-radius:18px;
-    padding:9px 14px; font-size:14px; font-family:inherit; line-height:1.4;
-    max-height:90px; background:#fdfaf5; color:var(--ink);
-  }
-  #input:focus{outline:2px solid var(--orange-soft); background:#fff}
-  #send{
-    flex:0 0 auto; width:44px; height:44px; border-radius:50%; border:none;
-    background:var(--orange); color:#fff; font-size:18px; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-  }
-  #send:disabled{background:#e8dccb; cursor:not-allowed}
+  /* ===== 输入 ===== */
+  #inputBar{flex:0 0 auto;border-top:1px solid var(--line);background:#fff;padding:7px 9px calc(7px + env(safe-area-inset-bottom));display:flex;gap:7px;align-items:flex-end}
+  #input{flex:1;resize:none;border:1px solid var(--line);border-radius:18px;padding:9px 14px;font-size:14px;font-family:inherit;line-height:1.4;max-height:88px;background:#fdfaf5;color:var(--ink)}
+  #input:focus{outline:2px solid var(--orange-soft);background:#fff}
+  #send{flex:0 0 auto;width:42px;height:42px;border-radius:50%;border:none;background:var(--orange);color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  #send:disabled{background:#e8dccb;cursor:not-allowed}
 
-  /* ===== 底部 tab / 账本抽屉 ===== */
-  #tabs{display:flex; border-top:1px solid var(--line); background:#fff}
-  #tabs button{
-    flex:1; padding:9px 0; border:none; background:none; font-size:12px;
-    font-family:inherit; color:var(--sub); cursor:pointer;
-  }
-  #tabs button.on{color:var(--orange); font-weight:700}
+  /* ===== tabs ===== */
+  #tabs{display:flex;border-top:1px solid var(--line);background:#fff}
+  #tabs button{flex:1;padding:7px 0;border:none;background:none;font-size:10.5px;font-family:inherit;color:var(--sub);cursor:pointer;line-height:1.5}
+  #tabs button.on{color:var(--orange);font-weight:700}
 
-  .drawer{
-    position:absolute; left:0; right:0; bottom:0; top:32%;
-    background:var(--bg); border-top-left-radius:18px; border-top-right-radius:18px;
-    box-shadow:0 -8px 30px rgba(0,0,0,.15); transform:translateY(105%);
-    transition:transform .28s ease; display:flex; flex-direction:column; z-index:20;
-  }
+  /* ===== 抽屉 ===== */
+  .drawer{position:absolute;left:0;right:0;bottom:0;top:22%;background:var(--bg);border-top-left-radius:18px;border-top-right-radius:18px;box-shadow:0 -8px 30px rgba(0,0,0,.15);transform:translateY(106%);transition:transform .28s ease;display:flex;flex-direction:column;z-index:20}
   .drawer.open{transform:translateY(0)}
-  .drawerHead{
-    padding:12px 16px 8px; display:flex; justify-content:space-between; align-items:center;
-    border-bottom:1px solid var(--line);
-  }
+  .drawerHead{padding:11px 15px 7px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);flex:0 0 auto}
   .drawerHead b{font-size:15px}
-  .drawerHead button{border:none;background:none;font-size:20px;color:var(--sub);cursor:pointer}
-  .drawerBody{flex:1; overflow-y:auto; padding:10px 14px 20px}
+  .drawerHead button{border:none;background:none;font-size:20px;color:var(--sub);cursor:pointer;line-height:1}
+  .drawerBody{flex:1;overflow-y:auto;padding:9px 13px 22px}
 
-  .sumCard{
-    background:#fff; border:1px solid var(--line); border-radius:12px;
-    padding:12px; margin-bottom:12px;
-  }
-  .sumRow{display:flex; justify-content:space-between; font-size:13px; padding:4px 0}
+  .sumCard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+  .sumRow{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0}
   .sumRow b{font-size:15px}
-  .over{color:var(--bad)}
-  .under{color:var(--good)}
+  .over{color:var(--bad)} .under{color:var(--good)}
 
-  .tx{
-    display:flex; align-items:center; gap:10px; background:#fff;
-    border:1px solid var(--line); border-radius:10px; padding:9px 11px; margin-bottom:7px;
+  /* ===== 日历 ===== */
+  .calHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+  .calHead b{font-size:14px}
+  .calNav{border:none;background:#f2ece2;border-radius:7px;width:28px;height:26px;font-size:14px;cursor:pointer;color:var(--ink);font-family:inherit}
+  .calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .calWd{text-align:center;font-size:10px;color:var(--sub);padding:2px 0}
+  .calDay{
+    aspect-ratio:1/1; border-radius:8px; background:#fff; border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:11px; cursor:pointer; position:relative; overflow:hidden; padding:1px;
   }
-  .tx .cico{font-size:19px}
-  .tx .tmain{flex:1; min-width:0}
-  .tx .tnote{font-size:13px; font-weight:600}
-  .tx .tmeta{font-size:11px; color:var(--sub); margin-top:1px}
-  .tx .tamt{font-weight:700; font-size:14px}
-  .tx .del{border:none;background:none;color:#c9bcaa;font-size:16px;cursor:pointer;padding:2px 4px}
-  .empty{text-align:center; color:var(--sub); font-size:13px; padding:26px 0}
-  .hint{font-size:11px; color:var(--sub); margin:2px 0 10px; line-height:1.6}
+  .calDay .cd{font-size:11px;line-height:1.1;color:var(--sub)}
+  .calDay .ca{font-size:9px;line-height:1.1;font-weight:700;margin-top:1px}
+  .calDay.has .cd{color:var(--ink)}
+  .calDay.under{background:#eaf6ea;border-color:#cfe8cf}
+  .calDay.under .ca{color:#3f9a3f}
+  .calDay.over{background:#fdeaea;border-color:#f3cdcd}
+  .calDay.over .ca{color:#c94a4a}
+  .calDay.today{border:2px solid var(--orange)}
+  .calDay.sel{outline:2px solid var(--orange);outline-offset:1px}
+  .calDay.empty{background:transparent;border:none;cursor:default}
+  .calLegend{display:flex;gap:10px;font-size:10px;color:var(--sub);margin-top:7px;flex-wrap:wrap}
+  .calLegend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:3px;vertical-align:-1px}
+  .selBar{display:flex;justify-content:space-between;align-items:center;margin:9px 0 6px;font-size:12px;color:var(--sub)}
+  .selBar button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:inherit;color:var(--ink)}
+
+  /* ===== 账目列表 ===== */
+  .tx{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:6px}
+  .tx .cico{font-size:18px}
+  .tx .tmain{flex:1;min-width:0}
+  .tx .tnote{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tx .tmeta{font-size:11px;color:var(--sub);margin-top:1px}
+  .tx .tamt{font-weight:700;font-size:14px;flex:0 0 auto}
+  .tx .del{border:none;background:none;color:#c9bcaa;font-size:15px;cursor:pointer;padding:2px 3px}
+  .empty{text-align:center;color:var(--sub);font-size:13px;padding:22px 0}
+  .hint{font-size:11px;color:var(--sub);margin:2px 0 9px;line-height:1.7}
+
+  /* ===== 商城 ===== */
+  .shopPoints{display:flex;align-items:center;justify-content:space-between;background:#fff8ee;border:1px solid var(--orange-soft);border-radius:12px;padding:9px 12px;margin-bottom:10px}
+  .shopPoints b{font-size:17px;color:var(--orange)}
+  .foodGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .foodCard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px;display:flex;flex-direction:column;align-items:center;position:relative}
+  .foodIcon{width:46px;height:46px;border-radius:12px;background:#fff6eb;display:flex;align-items:center;justify-content:center;margin-bottom:5px}
+  .foodIcon svg{width:32px;height:32px}
+  .foodName{font-size:13px;font-weight:700}
+  .foodDesc{font-size:10px;color:var(--sub);margin:1px 0 5px;text-align:center;line-height:1.4;min-height:26px}
+  .foodEffect{font-size:10px;color:var(--sub);margin-bottom:6px;text-align:center}
+  .buyBtn{width:100%;border:none;border-radius:8px;padding:6px;font-size:12px;font-weight:700;cursor:pointer;background:var(--orange);color:#fff;font-family:inherit}
+  .buyBtn:disabled{background:#e8dccb;color:#fff;cursor:not-allowed}
+  .owned{position:absolute;top:6px;right:7px;background:var(--orange);color:#fff;font-size:10px;border-radius:8px;padding:0 5px;font-weight:700}
+
+  /* ===== 喂猫 ===== */
+  .feedCard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px;text-align:center;margin-bottom:10px}
+  .feedCard .foodIcon{width:54px;height:54px;margin:0 auto 6px}
+  .feedCard .foodIcon svg{width:38px;height:38px}
+  .invRow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin-bottom:7px}
+  .invRow .foodIcon{width:36px;height:36px;margin:0;flex:0 0 auto}
+  .invRow .foodIcon svg{width:25px;height:25px}
+  .invMain{flex:1;min-width:0}
+  .invMain b{font-size:13px}
+  .invMain div{font-size:10px;color:var(--sub)}
+  .feedBtn{border:none;background:var(--orange);color:#fff;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex:0 0 auto}
+  .feedBtn:disabled{background:#e8dccb;cursor:not-allowed}
+
+  /* ===== 设置 ===== */
+  .fieldRow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .fieldRow:last-child{border-bottom:none}
+  .fieldRow label{font-size:13px;flex:0 0 auto;margin-right:10px}
+  .fieldRow input{flex:1;max-width:150px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;text-align:right;background:#fffdf9}
+  .fieldRow input:focus{outline:2px solid var(--orange-soft);background:#fff}
+  .saveTip{font-size:12px;color:var(--good);text-align:center;min-height:16px;margin-top:5px}
+  .danger{background:#fff;border:1px solid #f3d2d2;color:var(--bad);border-radius:10px;width:100%;padding:10px;font-size:13px;font-family:inherit;cursor:pointer;margin-top:9px}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- 宠物区 -->
   <header id="petPanel">
     <div class="petRow">
-      <div id="cat">🐱</div>
+      <div id="catWrap">
+        <svg class="cat-svg" viewBox="0 0 120 120" aria-hidden="true">
+          <!-- 尾巴 -->
+          <g class="tail">
+            <path d="M90 108 C110 108 116 92 106 82" fill="none" stroke="#f5c07a" stroke-width="10" stroke-linecap="round"/>
+            <path d="M90 108 C110 108 116 92 106 82" fill="none" stroke="#ffd9a8" stroke-width="5.5" stroke-linecap="round"/>
+          </g>
+          <g class="body-anim">
+            <!-- 身体 -->
+            <ellipse cx="60" cy="106" rx="30" ry="12" fill="#ffd9a8"/>
+            <!-- 前爪 -->
+            <ellipse cx="45" cy="113" rx="8.5" ry="4.5" fill="#fff6ea"/>
+            <ellipse cx="75" cy="113" rx="8.5" ry="4.5" fill="#fff6ea"/>
+            <!-- 耳朵 -->
+            <path d="M30 50 Q24 16 54 34 Z" fill="#ffd9a8"/>
+            <path d="M90 50 Q96 16 66 34 Z" fill="#ffd9a8"/>
+            <path d="M33 45 Q30 26 48 35 Z" fill="#ffb3b3"/>
+            <path d="M87 45 Q90 26 72 35 Z" fill="#ffb3b3"/>
+            <!-- 头（大） -->
+            <ellipse cx="60" cy="62" rx="38" ry="34" fill="#ffd9a8"/>
+            <!-- 腮红 -->
+            <ellipse cx="32" cy="76" rx="9" ry="5.5" fill="#ffb3b3" opacity=".6"/>
+            <ellipse cx="88" cy="76" rx="9" ry="5.5" fill="#ffb3b3" opacity=".6"/>
+            <!-- 眼睛：正常（大眼+高光） -->
+            <g class="eyes-normal">
+              <ellipse cx="46" cy="59" rx="8.5" ry="9.5" fill="#4a3a2c"/>
+              <ellipse cx="74" cy="59" rx="8.5" ry="9.5" fill="#4a3a2c"/>
+              <circle cx="49" cy="55" r="3.2" fill="#fff"/>
+              <circle cx="77" cy="55" r="3.2" fill="#fff"/>
+              <circle cx="43" cy="63" r="1.6" fill="#fff" opacity=".8"/>
+              <circle cx="71" cy="63" r="1.6" fill="#fff" opacity=".8"/>
+            </g>
+            <!-- 眼睛：开心 -->
+            <g class="eyes-happy">
+              <path d="M38 61 Q46 50 54 61" fill="none" stroke="#4a3a2c" stroke-width="3.4" stroke-linecap="round"/>
+              <path d="M66 61 Q74 50 82 61" fill="none" stroke="#4a3a2c" stroke-width="3.4" stroke-linecap="round"/>
+            </g>
+            <!-- 眼睛：饿 -->
+            <g class="eyes-hungry">
+              <ellipse cx="46" cy="62" rx="7.5" ry="6" fill="#4a3a2c"/>
+              <ellipse cx="74" cy="62" rx="7.5" ry="6" fill="#4a3a2c"/>
+              <circle cx="48.5" cy="59.5" r="2" fill="#fff"/>
+              <circle cx="76.5" cy="59.5" r="2" fill="#fff"/>
+              <path d="M38 53 Q46 49 54 53" fill="none" stroke="#4a3a2c" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M66 53 Q74 49 82 53" fill="none" stroke="#4a3a2c" stroke-width="2.4" stroke-linecap="round"/>
+            </g>
+            <!-- 口水 -->
+            <path class="tear" d="M71 70 q3.2 5.5 0 9 q-3.2 -3.5 0 -9" fill="#7fc4ef" opacity=".85"/>
+            <!-- 鼻子 -->
+            <path d="M56 72 L64 72 L60 76.5 Z" fill="#ff9e9e"/>
+            <!-- 嘴 -->
+            <path d="M53 80 Q56.5 84.5 60 80" fill="none" stroke="#8a6f52" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M60 80 Q63.5 84.5 67 80" fill="none" stroke="#8a6f52" stroke-width="2.2" stroke-linecap="round"/>
+            <!-- 胡须 -->
+            <g stroke="#cbb69c" stroke-width="1.8" stroke-linecap="round">
+              <path d="M18 66 L34 69"/><path d="M18 74 L34 73"/>
+              <path d="M102 66 L86 69"/><path d="M102 74 L86 73"/>
+            </g>
+          </g>
+        </svg>
+      </div>
       <div class="petInfo">
-        <div class="petName"><span id="petName">年糕</span><span class="lv" id="petLv">Lv.1</span></div>
+        <div class="petNameRow">
+          <span class="petName" id="petName">年糕</span>
+          <span class="lv" id="petLv">Lv.1</span>
+          <span class="rename" id="btnRename">改名</span>
+        </div>
         <div class="bars">
           <div class="barLabel"><span>饱腹度</span><span id="hungerTxt">80%</span></div>
           <div class="bar"><i id="hungerFill" style="width:80%"></i></div>
-          <div class="barLabel" style="margin-top:3px"><span>经验</span><span id="expTxt">0/50</span></div>
+          <div class="barLabel" style="margin-top:2px"><span>成长</span><span id="expTxt">0/50</span></div>
           <div class="bar"><i id="expFill" style="width:0%"></i></div>
         </div>
       </div>
     </div>
     <div class="statRow">
-      <div class="stat hi"><b id="statPoints">0</b><span>积分</span></div>
+      <div class="stat hi" id="statPointsCard"><b id="statPoints">0</b><span>积分</span></div>
       <div class="stat"><b id="statToday">0</b><span>今日支出</span></div>
-      <div class="stat"><b id="statBudget">100</b><span>今日预算</span></div>
+      <div class="stat" id="statBudgetCard"><b id="statBudget">100</b><span>今日预算 ⚙</span></div>
       <div class="stat"><b id="statMonth">0</b><span>本月支出</span></div>
     </div>
   </header>
 
-  <!-- 聊天 -->
   <main id="chat"></main>
 
-  <!-- 输入 -->
   <div id="inputBar">
-    <textarea id="input" rows="1" placeholder="跟年糕说说今天花了什么…"></textarea>
+    <textarea id="input" rows="1" placeholder="跟猫说说今天花了什么…"></textarea>
     <button id="send" disabled>➤</button>
   </div>
 
-  <!-- tab -->
   <div id="tabs">
-    <button class="on" data-tab="chat">💬 和猫说话</button>
+    <button class="on" data-tab="chat">💬 说话</button>
     <button data-tab="book">📒 账本</button>
+    <button data-tab="shop">🛒 商城</button>
     <button data-tab="feed">🍚 喂猫</button>
+    <button data-tab="setting">⚙️ 设置</button>
   </div>
 
-  <!-- 抽屉：账本 -->
+  <!-- 账本 + 日历 -->
   <div class="drawer" id="drawerBook">
     <div class="drawerHead"><b>账本</b><button data-close>✕</button></div>
     <div class="drawerBody">
-      <div class="sumCard">
+      <div class="calHead">
+        <button class="calNav" id="calPrev">‹</button>
+        <b id="calTitle">2026年11月</b>
+        <button class="calNav" id="calNext">›</button>
+      </div>
+      <div class="calGrid" id="calGrid"></div>
+      <div class="calLegend">
+        <span><i style="background:#eaf6ea;border:1px solid #cfe8cf"></i>没超预算</span>
+        <span><i style="background:#fdeaea;border:1px solid #f3cdcd"></i>超预算</span>
+        <span><i style="background:#fff;border:1px solid #f0e4d4"></i>没记账</span>
+      </div>
+
+      <div class="selBar">
+        <span id="selLabel">点某天看明细</span>
+        <button id="btnAllDay">看全部</button>
+      </div>
+
+      <div class="sumCard" style="margin-top:2px">
         <div class="sumRow"><span>今日支出</span><span><b id="dToday">¥0</b> <span id="dTodayState"></span></span></div>
         <div class="sumRow"><span>今日预算</span><span id="dDailyLimit">¥100</span></div>
         <div class="sumRow"><span>本月支出</span><span><b id="dMonth">¥0</b> <span id="dMonthState"></span></span></div>
         <div class="sumRow"><span>本月预算</span><span id="dMonthlyLimit">¥3000</span></div>
-        <div class="sumRow" style="border-top:1px dashed var(--line); margin-top:6px; padding-top:8px">
-          <span>改预算</span>
-          <span>
-            日 <input id="inpDaily" type="number" style="width:62px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;font-size:12px">
-            月 <input id="inpMonthly" type="number" style="width:72px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;font-size:12px">
-          </span>
-        </div>
       </div>
-      <div class="hint">提示：积分规则 —— 当天支出没超预算，得 10 分；连续达标有加成。</div>
+      <div class="hint" id="settleHint"></div>
       <div id="txList"></div>
     </div>
   </div>
 
-  <!-- 抽屉：喂猫 -->
+  <!-- 商城 -->
+  <div class="drawer" id="drawerShop">
+    <div class="drawerHead"><b>猫粮商城</b><button data-close>✕</button></div>
+    <div class="drawerBody">
+      <div class="shopPoints">
+        <span>我的积分</span>
+        <b id="shopPoints">0</b>
+      </div>
+      <div class="hint">用积分买猫粮，不同食物加的饱腹度和成长值不一样。买完去「喂猫」喂它。</div>
+      <div class="foodGrid" id="foodGrid"></div>
+    </div>
+  </div>
+
+  <!-- 喂猫 -->
   <div class="drawer" id="drawerFeed">
     <div class="drawerHead"><b>喂猫</b><button data-close>✕</button></div>
     <div class="drawerBody">
-      <div class="sumCard" style="text-align:center">
-        <div style="font-size:52px" id="feedCat">🐱</div>
-        <div style="margin:8px 0 4px;font-weight:700" id="feedName">年糕</div>
-        <div class="hint" id="feedDesc">它看起来还不错。</div>
+      <div class="feedCard">
+        <div style="font-weight:700;font-size:15px" id="feedName">年糕</div>
+        <div class="hint" id="feedDesc" style="margin:3px 0 0">它看起来还不错。</div>
       </div>
       <div class="sumCard">
-        <div class="sumRow"><span>当前积分</span><b id="feedPoints">0</b></div>
-        <div class="sumRow"><span>猫粮价格</span><span>10 积分 / 份</span></div>
+        <div class="sumRow"><span>积分</span><b id="feedPoints">0</b></div>
         <div class="sumRow"><span>饱腹度</span><span id="feedHunger">80%</span></div>
+        <div class="sumRow"><span>成长值</span><span id="feedExp">0 / 50</span></div>
       </div>
-      <button class="btn ok" id="btnFeed" style="width:100%;padding:12px;font-size:15px">🍚 喂一份猫粮（-10 积分）</button>
-      <div class="hint" style="margin-top:10px">喂一次：饱腹度 +20，经验 +10。经验满了会升级。</div>
+      <div id="invList"></div>
+    </div>
+  </div>
+
+  <!-- 设置 -->
+  <div class="drawer" id="drawerSetting">
+    <div class="drawerHead"><b>设置</b><button data-close>✕</button></div>
+    <div class="drawerBody">
+      <div class="sumCard">
+        <div class="fieldRow"><label>猫的名字</label><input id="setName" type="text" maxlength="8" placeholder="给猫起个名"></div>
+        <div class="fieldRow"><label>每日预算</label><input id="setDaily" type="number" min="1" step="1"></div>
+        <div class="fieldRow"><label>每月预算</label><input id="setMonthly" type="number" min="1" step="1"></div>
+        <div class="saveTip" id="saveTip"></div>
+      </div>
+      <div class="hint">· 改完会自动保存<br>· 预算是你自己定的目标<br>· <b>当天不发积分</b>，第二天才结算前一天：没超预算 +10 分，连续达标有加成</div>
+      <button class="danger" id="btnReset">清空所有数据（谨慎）</button>
     </div>
   </div>
 
 </div>
 
 <script>
-/* =========================================================
-   喵账 MVP · 单文件网页版
-   核心：本地规则解析「一句话 → 一笔账」，不需要联网
-   ========================================================= */
+/* ============================================================
+   喵账 v3
+   v3 改动：初始积分归零 / 日历 / 商城（10种食物）/ 更可爱的手绘猫
+   ============================================================ */
 
-/* ---------- 分类词典 ---------- */
 const CATEGORIES = [
   { key:'餐饮', icon:'🍜', words:['吃','饭','面','火锅','奶茶','咖啡','coffee','外卖','早餐','午餐','晚餐','菜','零食','水果','牛肉面','烧烤','喝','饭堂','食堂'] },
   { key:'交通', icon:'🚕', words:['打车','滴滴','地铁','公交','加油','油费','车费','高铁','机票','停车','地铁卡','火车'] },
@@ -258,32 +397,64 @@ const CATEGORIES = [
   { key:'住房', icon:'🏠', words:['房租','水电','物业','燃气','水费','电费','宽带'] },
   { key:'其他', icon:'📌', words:[] }
 ];
-
-/* 不算记账的说法 */
 const NON_TX = ['工资','到账','发工资','省了','没吃','没花','收入','退款','退了','赚了','中奖','报销','借钱','还钱','瘦了'];
 
+/* ---------- 食物（10 种）---------- */
+const FOODS = [
+  { id:'fish',    name:'小鱼干',   price:10, hunger:15, exp:8,  desc:'最爱的小零食' },
+  { id:'milk',    name:'牛奶',     price:8,  hunger:10, exp:5,  desc:'渴了喝一口' },
+  { id:'apple',   name:'苹果干',   price:15, hunger:20, exp:10, desc:'脆脆甜甜的' },
+  { id:'catstick',name:'猫条',     price:12, hunger:15, exp:12, desc:'挤一挤就开心' },
+  { id:'chicken', name:'鸡胸肉',   price:20, hunger:30, exp:15, desc:'高蛋白，很扛饿' },
+  { id:'spicy',   name:'辣条',     price:25, hunger:18, exp:25, desc:'偷吃会辣到' },
+  { id:'can',     name:'猫罐头',   price:30, hunger:40, exp:20, desc:'一顿大餐' },
+  { id:'freeze',  name:'冻干',     price:35, hunger:35, exp:30, desc:'一口一个' },
+  { id:'salmon',  name:'三文鱼',   price:40, hunger:45, exp:28, desc:'今天很豪华' },
+  { id:'cake',    name:'猫蛋糕',   price:50, hunger:50, exp:40, desc:'生日才吃' }
+];
+
+/* ---------- 食物图标（内联 SVG）---------- */
+const FOOD_ICONS = {
+  fish:`<svg viewBox="0 0 40 40"><ellipse cx="18" cy="20" rx="11" ry="7" fill="#8fd3f4"/><path d="M29 20 L37 13 L37 27 Z" fill="#8fd3f4"/><circle cx="13" cy="18" r="1.7" fill="#2b2b2b"/><path d="M18 13 Q22 20 18 27" stroke="#6cbde6" stroke-width="1.6" fill="none"/></svg>`,
+  milk:`<svg viewBox="0 0 40 40"><path d="M12 15 L28 15 L26 35 L14 35 Z" fill="#ffffff" stroke="#dfe7ee"/><path d="M12 15 L28 15 L27 25 L13 25 Z" fill="#dbeafe"/><rect x="11" y="9" width="18" height="6" rx="2.5" fill="#9ec9e8"/><rect x="15" y="19" width="10" height="7" rx="2" fill="#fff"/></svg>`,
+  apple:`<svg viewBox="0 0 40 40"><circle cx="20" cy="24" r="11" fill="#ff8a8a"/><path d="M20 13 Q21 7 27 6" stroke="#6fbf73" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M20 13 Q26 9 30 13 Q26 17 20 13" fill="#6fbf73"/><ellipse cx="15" cy="21" rx="3" ry="4" fill="#ffb3b3" opacity=".6"/></svg>`,
+  catstick:`<svg viewBox="0 0 40 40"><rect x="8" y="14" width="22" height="13" rx="5" fill="#f2a65a"/><rect x="27" y="17" width="7" height="7" rx="2.5" fill="#c97a3a"/><path d="M12 21 h11" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".85"/></svg>`,
+  chicken:`<svg viewBox="0 0 40 40"><ellipse cx="20" cy="15" rx="10" ry="8.5" fill="#f5b971"/><ellipse cx="17" cy="13" rx="3.5" ry="2.5" fill="#ffd9a8" opacity=".8"/><rect x="17.5" y="22" width="5" height="11" rx="2.5" fill="#fff6ea" stroke="#e8d8c4"/><circle cx="20" cy="34" r="4" fill="#fff6ea" stroke="#e8d8c4"/></svg>`,
+  spicy:`<svg viewBox="0 0 40 40"><path d="M6 14 Q14 8 22 15 T38 14" stroke="#e04b4b" stroke-width="6.5" stroke-linecap="round" fill="none"/><path d="M6 26 Q14 20 22 27 T38 26" stroke="#f07a5a" stroke-width="6.5" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="1.6" fill="#ffd166"/></svg>`,
+  can:`<svg viewBox="0 0 40 40"><rect x="10" y="13" width="20" height="20" rx="3" fill="#cfcfcf"/><rect x="10" y="19" width="20" height="8" fill="#f0913a"/><ellipse cx="20" cy="13" rx="10" ry="3.4" fill="#eaeaea" stroke="#c9c9c9"/><path d="M15 23 h10" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".9"/></svg>`,
+  freeze:`<svg viewBox="0 0 40 40"><rect x="10" y="12" width="20" height="18" rx="5" fill="#f7d9a8"/><circle cx="16" cy="19" r="2.2" fill="#e0b478"/><circle cx="24" cy="25" r="2.4" fill="#e0b478"/><circle cx="22" cy="16" r="1.8" fill="#e0b478"/><circle cx="15" cy="26" r="1.5" fill="#e0b478"/></svg>`,
+  salmon:`<svg viewBox="0 0 40 40"><path d="M7 21 Q20 7 33 21 Q20 35 7 21 Z" fill="#ff9f80"/><path d="M13 21 Q20 15 27 21" stroke="#ffd9c8" stroke-width="2.2" fill="none"/><path d="M17 25 Q20 23 23 25" stroke="#ffd9c8" stroke-width="1.8" fill="none"/></svg>`,
+  cake:`<svg viewBox="0 0 40 40"><rect x="8" y="22" width="24" height="10" rx="3" fill="#f7b3c2"/><rect x="8" y="17" width="24" height="7" rx="3" fill="#fff0f3"/><rect x="18" y="9" width="4" height="8" rx="1.5" fill="#f0913a"/><circle cx="20" cy="8" r="2.8" fill="#ffd166"/><circle cx="14" cy="20" r="1.4" fill="#ffb3b3"/><circle cx="26" cy="20" r="1.4" fill="#ffb3b3"/></svg>`
+};
+
+/* ---------- 日期工具 ---------- */
+function dstr(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function todayStr(){ return dstr(new Date()); }
+function monthStr(){ return todayStr().slice(0,7); }
+function addDays(s, n){ const [y,m,d]=s.split('-').map(Number); const dt=new Date(y,m-1,d); dt.setDate(dt.getDate()+n); return dstr(dt); }
+
 /* ---------- 状态 ---------- */
-const LS_KEY = 'miaoZhang.v1';
+const LS_KEY = 'miaoZhang.v3';
 let state = null;
 
 function defaultState(){
   return {
     pet:{ name:'年糕', hunger:80, exp:0, level:1, lastTick:Date.now() },
     points:0,
+    inventory:{},                 // { foodId: 数量 }
     dailyLimit:100,
     monthlyLimit:3000,
-    transactions:[],        // {id, amount, category, note, date(YYYY-MM-DD), ts}
-    messages:[],            // {role:'cat'|'me'|'sys', text}
-    pending:null,           // 待确认的一笔
-    lastAwardDate:null,
+    transactions:[],
+    messages:[],
+    pending:null,
+    lastSettledDate:null,
     streak:0,
-    lastStreakDate:null
+    lastStreakDate:null,
+    calMonth: monthStr(),
+    selectedDate: null
   };
 }
-
-function save(){
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
-}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
 function load(){
   try{
     const raw = localStorage.getItem(LS_KEY);
@@ -292,200 +463,186 @@ function load(){
   state = defaultState();
 }
 
-/* ---------- 工具 ---------- */
 const $ = s => document.querySelector(s);
-const todayStr = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-};
-const monthStr = () => todayStr().slice(0,7);
 const fmt = n => (Math.round(n*100)/100).toString();
 const uid = () => Math.random().toString(36).slice(2,9);
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-/* ---------- 中文数字 → 阿拉伯 ---------- */
+/* ---------- 中文数字 ---------- */
 function cn2num(s){
   const d={'零':0,'〇':0,'一':1,'壹':1,'二':2,'两':2,'贰':2,'三':3,'叁':3,'四':4,'肆':4,'五':5,'伍':5,'六':6,'陆':6,'七':7,'柒':7,'八':8,'捌':8,'九':9,'玖':9};
   const u={'十':10,'拾':10,'百':100,'佰':100,'千':1000,'仟':1000};
-  let section=0, num=0, hasNum=false;
+  let sec=0,num=0,has=false;
   for(const ch of s){
-    if(d[ch]!==undefined){ num=d[ch]; hasNum=true; }
-    else if(u[ch]){
-      if(num===0) num=1;
-      section += num*u[ch];
-      num=0;
-      hasNum=true;
-    } else return null;
+    if(d[ch]!==undefined){ num=d[ch]; has=true; }
+    else if(u[ch]){ if(num===0)num=1; sec+=num*u[ch]; num=0; has=true; }
+    else return null;
   }
-  if(!hasNum) return null;
-  return section+num || null;
+  return has ? (sec+num || null) : null;
 }
 
-/* ---------- 从一段话里抽金额 ---------- */
+/* ---------- 抽金额 ---------- */
 function extractAmount(seg){
-  // 1) 「46块8」这种口语小数
   let m = seg.match(/(\d{1,6})\s*块\s*(\d)\s*(?:元|钱|$|[，。！？,!?\s])/);
-  if(m) return parseFloat(m[1] + '.' + m[2]);
-
-  // 2) 阿拉伯数字 + 金额单位
+  if(m) return parseFloat(m[1]+'.'+m[2]);
   m = seg.match(/(\d+(?:\.\d+)?)\s*(?:元|块|块钱|人民币|rmb|RMB|¥|￥)/);
   if(m) return parseFloat(m[1]);
-
-  // 3) 中文数字 + 金额单位（容忍「三十多」）
   m = seg.match(/([零〇一壹二两贰三叁四肆五伍六陆七柒八捌九玖十拾百佰千仟]{1,8})\s*多?\s*(?:元|块|块钱)/);
-  if(m){ const v = cn2num(m[1]); if(v) return v; }
-
-  // 4) 「花了三十多」「打完折二百六」这类没单位的口语数字
+  if(m){ const v=cn2num(m[1]); if(v) return v; }
   m = seg.match(/(?:花了|花|用了|付了|折|一共|总共)\s*([零〇一壹二两贰三叁四肆五伍六陆七柒八捌九玖十拾百佰千仟]{1,8})\s*多?/);
-  if(m){ const v = cn2num(m[1]); if(v) return v; }
-
-  // 5) 「人均80」「一共99」这类
+  if(m){ const v=cn2num(m[1]); if(v) return v; }
   m = seg.match(/(?:人均|一共|总共|合计|共)\s*(\d+(?:\.\d+)?)/);
   if(m) return parseFloat(m[1]);
-
-  // 6) 裸数字（排除日期、电话）
   m = seg.match(/(?<![\d\-:：/])(\d{1,6}(?:\.\d{1,2})?)(?![\d\-:：/])/);
   if(m) return parseFloat(m[1]);
-
   return null;
 }
-
-/* ---------- 分类 ---------- */
 function classify(seg){
-  for(const c of CATEGORIES){
-    for(const w of c.words){
-      if(seg.includes(w)) return c.key;
-    }
-  }
+  for(const c of CATEGORIES) for(const w of c.words) if(seg.includes(w)) return c.key;
   return '其他';
 }
-
-/* ---------- 日期识别 ---------- */
 function resolveDate(seg){
   const d = new Date();
-  if(seg.includes('前天')){ d.setDate(d.getDate()-2); }
-  else if(seg.includes('昨天')||seg.includes('昨晚')){ d.setDate(d.getDate()-1); }
-  else if(seg.includes('上周末')){ d.setDate(d.getDate() - ((d.getDay()+7-6)%7 || 7)); }
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if(seg.includes('前天')) d.setDate(d.getDate()-2);
+  else if(seg.includes('昨天')||seg.includes('昨晚')) d.setDate(d.getDate()-1);
+  return dstr(d);
 }
-
-/* ---------- 核心：解析一句话 ---------- */
 function parseMessage(text){
-  const raw = (text||'').trim();
-  if(!raw) return { kind:'empty' };
-
-  // 整句是非记账
-  if(NON_TX.some(w => raw.includes(w))) return { kind:'nontx' };
-
-  // 拆成分句（，,、；; 和 然后/还有）
+  const raw=(text||'').trim();
+  if(!raw) return {kind:'empty'};
+  if(NON_TX.some(w=>raw.includes(w))) return {kind:'nontx'};
   const segs = raw.split(/[，,；;、]|然后|还有/).map(s=>s.trim()).filter(Boolean);
-  // 整句级别的分类，用来给"没上下文"的分句兜底
-  const sentenceCat = classify(raw);
+  const sCat = classify(raw);
   const out = [];
-
   for(const seg of segs){
-    if(NON_TX.some(w => seg.includes(w))) continue;
-    const amount = extractAmount(seg);
-    if(amount === null) continue;
+    if(NON_TX.some(w=>seg.includes(w))) continue;
+    const a = extractAmount(seg);
+    if(a===null) continue;
     let cat = classify(seg);
-    if(cat === '其他' && sentenceCat !== '其他') cat = sentenceCat;
-    out.push({
-      amount,
-      category: cat,
-      note: seg.slice(0, 18),
-      date: resolveDate(seg)
-    });
+    if(cat==='其他' && sCat!=='其他') cat = sCat;
+    out.push({amount:a, category:cat, note:seg.slice(0,18), date:resolveDate(seg)});
   }
-
-  if(out.length === 0){
-    // 有分句但没金额 → 追问
-    return { kind:'needAmount', text: raw };
-  }
-  return { kind:'tx', items: out };
+  if(out.length===0) return {kind:'needAmount', text:raw};
+  return {kind:'tx', items:out};
 }
 
-/* ---------- 记账 ---------- */
+/* ---------- 账目 ---------- */
 function addTransaction(t){
-  state.transactions.push({
-    id: uid(),
-    amount: t.amount,
-    category: t.category,
-    note: t.note,
-    date: t.date,
-    ts: Date.now()
-  });
+  state.transactions.push({id:uid(), amount:t.amount, category:t.category, note:t.note, date:t.date, ts:Date.now()});
 }
+function spendOn(d){ return state.transactions.filter(t=>t.date===d).reduce((a,b)=>a+b.amount,0); }
+function todaySpend(){ return spendOn(todayStr()); }
+function monthSpend(){ const m=monthStr(); return state.transactions.filter(t=>t.date.startsWith(m)).reduce((a,b)=>a+b.amount,0); }
 
-function todaySpend(){
-  const d = todayStr();
-  return state.transactions.filter(t=>t.date===d).reduce((a,b)=>a+b.amount,0);
-}
-function monthSpend(){
-  const m = monthStr();
-  return state.transactions.filter(t=>t.date.startsWith(m)).reduce((a,b)=>a+b.amount,0);
-}
+/* ---------- 按天结算（修正：首次不进账）---------- */
+const SETTLE_MAX = 60;
 
-/* ---------- 积分 ---------- */
-function checkAndAwardPoints(){
-  const d = todayStr();
-  if(state.lastAwardDate === d) return;          // 今天已结算
-  const spent = todaySpend();
-  if(spent > state.dailyLimit) return;           // 超预算不给
+function settlePastDays(){
+  const today = todayStr();
 
-  // 连续达标
-  const y = new Date(); y.setDate(y.getDate()-1);
-  const yStr = `${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;
-  if(state.lastStreakDate === yStr) state.streak = (state.streak||0)+1;
-  else state.streak = 1;
+  // 首次使用：不做任何结算，把指针设到昨天，保证初始积分为 0
+  if(state.lastSettledDate === null){
+    state.lastSettledDate = addDays(today, -1);
+    return [];
+  }
 
-  let pts = 10;
-  if(state.streak >= 3) pts += 5;
-  if(state.streak >= 7) pts += 5;
+  let cursor = addDays(state.lastSettledDate, 1);
+  let guard = 0;
+  const results = [];
+  while(cursor < today && guard < SETTLE_MAX){
+    guard++;
+    const spent = spendOn(cursor);
+    const passed = spent <= state.dailyLimit;
+    if(passed){
+      if(state.lastStreakDate === addDays(cursor,-1)) state.streak = (state.streak||0)+1;
+      else state.streak = 1;
+      let pts = 10;
+      if(state.streak >= 3) pts += 5;
+      if(state.streak >= 7) pts += 5;
+      state.points += pts;
+      state.lastStreakDate = cursor;
+      results.push({date:cursor, spent, passed:true, pts, streak:state.streak});
+    } else {
+      state.streak = 0;
+      results.push({date:cursor, spent, passed:false, pts:0, streak:0});
+    }
+    state.lastSettledDate = cursor;
+    cursor = addDays(cursor, 1);
+  }
 
-  state.points += pts;
-  state.lastAwardDate = d;
-  state.lastStreakDate = d;
-
-  addCatMsg(`🎉 今天没超预算！+${pts} 积分${state.streak>1?`（连续 ${state.streak} 天）`:''}`);
+  if(results.length){
+    const won = results.filter(r=>r.passed);
+    const lost = results.filter(r=>!r.passed);
+    if(won.length){
+      const total = won.reduce((a,b)=>a+b.pts,0);
+      const last = won[won.length-1];
+      addSysMsg(`📅 ${last.date} 结算：支出 ¥${fmt(last.spent)}，没超预算，+${last.pts} 积分${last.streak>=3?`（连续 ${last.streak} 天）`:''}`);
+      if(won.length>1) addSysMsg(`共结算 ${won.length} 天，合计 +${total} 积分`);
+    }
+    if(lost.length){
+      const last = lost[lost.length-1];
+      addSysMsg(`📅 ${last.date} 结算：支出 ¥${fmt(last.spent)}，超预算了，这天没有积分`);
+    }
+  }
+  return results;
 }
 
 /* ---------- 宠物 ---------- */
 function tickPet(){
   const now = Date.now();
-  const hours = (now - (state.pet.lastTick||now)) / 3600000;
+  const hours = (now - (state.pet.lastTick||now))/3600000;
   if(hours >= 1){
-    const drop = Math.floor(hours) * 1;
-    state.pet.hunger = Math.max(0, Math.min(100, state.pet.hunger - drop));
+    state.pet.hunger = Math.max(0, Math.min(100, state.pet.hunger - Math.floor(hours)));
     state.pet.lastTick = now;
   }
 }
-
 const EXP_PER_LEVEL = 50;
-function feedPet(){
-  if(state.points < 10){ addCatMsg('积分不够啦，先省着点花，达标就能攒积分～'); return false; }
-  state.points -= 10;
-  state.pet.hunger = Math.min(100, state.pet.hunger + 20);
-  state.pet.exp += 10;
+
+/* ---------- 商城 ---------- */
+function buyFood(fid){
+  const f = FOODS.find(x=>x.id===fid);
+  if(!f) return;
+  if(state.points < f.price){ addSysMsg('积分不够，今天先省着点花～'); return; }
+  state.points -= f.price;
+  state.inventory[fid] = (state.inventory[fid]||0)+1;
+  save(); renderAll();
+  addSysMsg(`🛒 买了 1 份「${f.name}」，花了 ${f.price} 积分`);
+}
+
+/* ---------- 喂食 ---------- */
+function feedFood(fid){
+  const f = FOODS.find(x=>x.id===fid);
+  if(!f) return false;
+  if((state.inventory[fid]||0) <= 0){ addSysMsg('这个吃完了，去商城买吧～'); return false; }
+
+  state.inventory[fid] -= 1;
+  if(state.inventory[fid] <= 0) delete state.inventory[fid];
+
+  state.pet.hunger = Math.min(100, state.pet.hunger + f.hunger);
+  state.pet.exp += f.exp;
+  let lvUp = false;
   while(state.pet.exp >= state.pet.level * EXP_PER_LEVEL){
     state.pet.exp -= state.pet.level * EXP_PER_LEVEL;
     state.pet.level += 1;
-    addCatMsg(`✨ ${state.pet.name}升级了！现在是 Lv.${state.pet.level}`);
+    lvUp = true;
   }
   state.pet.lastTick = Date.now();
-  return true;
+  save(); renderAll();
+  return {name:f.name, hunger:f.hunger, exp:f.exp, lvUp, level:state.pet.level};
 }
 
 /* ---------- 渲染 ---------- */
-function catFace(){
+function moodClass(){
   const h = state.pet.hunger;
-  if(h >= 70) return '😺';
-  if(h >= 40) return '🐱';
-  if(h >= 15) return '😿';
-  return '😾';
+  if(h >= 70) return 'mood-happy';
+  if(h >= 40) return '';
+  if(h >= 10) return 'mood-hungry';
+  return 'mood-hungry mood-starving';
 }
 
 function renderPet(){
+  document.querySelector('.cat-svg').setAttribute('class','cat-svg '+moodClass());
   const h = state.pet.hunger;
-  const cat = $('#cat'); cat.textContent = catFace();
   $('#petName').textContent = state.pet.name;
   $('#petLv').textContent = 'Lv.' + state.pet.level;
   $('#hungerFill').style.width = h + '%';
@@ -499,39 +656,32 @@ function renderPet(){
   $('#statBudget').textContent = state.dailyLimit;
   $('#statMonth').textContent = fmt(monthSpend());
 
-  // 喂猫抽屉
-  $('#feedCat').textContent = catFace();
   $('#feedName').textContent = state.pet.name;
   $('#feedPoints').textContent = state.points;
   $('#feedHunger').textContent = h + '%';
+  $('#feedExp').textContent = `${state.pet.exp} / ${need}`;
   $('#feedDesc').textContent =
-    h >= 70 ? '它看起来很满足，正在打呼噜。' :
-    h >= 40 ? '它看起来还行，但有点想吃东西了。' :
-    h >= 15 ? '它开始蹭你的手，好像在说饿了。' :
+    h >= 70 ? '它很满足，正趴着打呼噜。' :
+    h >= 40 ? '它看起来还行，但有点想吃东西。' :
+    h >= 10 ? '它开始蹭你的手，好像在说饿了。' :
               '它趴着不动了……快喂点东西吧。';
 }
 
-function addMsg(role, text){
-  state.messages.push({ role, text });
-  renderChat();
-}
-
-function addCatMsg(text){ addMsg('cat', text); }
+function addMsg(role,text){ state.messages.push({role,text}); renderChat(); }
+function addCatMsg(t){ addMsg('cat',t); }
+function addSysMsg(t){ addMsg('sys',t); }
 
 function renderChat(){
   const box = $('#chat');
   box.innerHTML = '';
   for(const m of state.messages){
-    const div = document.createElement('div');
-    div.className = 'msg ' + (m.role==='me'?'me':m.role==='sys'?'sys':'cat');
-    div.textContent = m.text;
-    box.appendChild(div);
+    const d = document.createElement('div');
+    d.className = 'msg ' + (m.role==='me'?'me':m.role==='sys'?'sys':'cat');
+    d.textContent = m.text;
+    box.appendChild(d);
   }
-  // 待确认卡片
-  if(state.pending && state.pending.kind === 'tx'){
-    state.pending.items.forEach((it, idx) => {
-      box.appendChild(buildConfirmCard(it, idx));
-    });
+  if(state.pending && state.pending.kind==='tx'){
+    state.pending.items.forEach((it,i)=>box.appendChild(buildConfirmCard(it,i)));
   }
   box.scrollTop = box.scrollHeight;
 }
@@ -542,97 +692,184 @@ function buildConfirmCard(it, idx){
   wrap.innerHTML = `
     <div class="t">记一笔？</div>
     <div class="confirmRow"><label>金额</label><input type="number" step="0.01" value="${it.amount}"></div>
-    <div class="confirmRow"><label>分类</label>
-      <select>
-        ${CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===it.category?'selected':''}>${c.icon} ${c.key}</option>`).join('')}
-      </select>
-    </div>
+    <div class="confirmRow"><label>分类</label><select>${CATEGORIES.map(c=>`<option value="${c.key}" ${c.key===it.category?'selected':''}>${c.icon} ${c.key}</option>`).join('')}</select></div>
     <div class="confirmRow"><label>日期</label><input type="date" value="${it.date}"></div>
-    <div class="confirmBtns">
-      <button class="btn no">不记了</button>
-      <button class="btn ok">确认记账</button>
-    </div>`;
-  const [btnNo, btnOk] = wrap.querySelectorAll('.confirmBtns button');
-  btnNo.onclick = () => {
-    removePending(idx);
-  };
-  btnOk.onclick = () => {
+    <div class="confirmBtns"><button class="btn no">不记了</button><button class="btn ok">确认记账</button></div>`;
+  const [bNo,bOk] = wrap.querySelectorAll('.confirmBtns button');
+  bNo.onclick = ()=>removePending(idx);
+  bOk.onclick = ()=>{
     const amt = parseFloat(wrap.querySelector('input[type=number]').value);
     const cat = wrap.querySelector('select').value;
     const date = wrap.querySelector('input[type=date]').value || todayStr();
-    if(!(amt > 0)){ alert('金额要大于 0'); return; }
-    addTransaction({ amount:amt, category:cat, note:it.note, date });
+    if(!(amt>0)){ alert('金额要大于 0'); return; }
+    addTransaction({amount:amt, category:cat, note:it.note, date});
     removePending(idx);
     addCatMsg(`记好了：${cat} ¥${fmt(amt)}（${date}）。`);
-    save();
-    checkAndAwardPoints();
-    renderAll(); save();
+    save(); renderAll();
   };
   return wrap;
 }
-
 function removePending(idx){
   if(!state.pending) return;
   state.pending.items.splice(idx,1);
-  if(state.pending.items.length === 0) state.pending = null;
+  if(state.pending.items.length===0) state.pending = null;
   save(); renderAll();
 }
 
+/* ---------- 日历 ---------- */
+function renderCalendar(){
+  const [y,m] = state.calMonth.split('-').map(Number);
+  const first = new Date(y, m-1, 1);
+  const days = new Date(y, m, 0).getDate();
+  const offset = (first.getDay()+6)%7;   // 周一为第一列
+  $('#calTitle').textContent = `${y}年${m}月`;
+
+  const grid = $('#calGrid');
+  const wds = ['一','二','三','四','五','六','日'];
+  let html = wds.map(w=>`<div class="calWd">${w}</div>`).join('');
+  for(let i=0;i<offset;i++) html += '<div class="calDay empty"></div>';
+
+  const today = todayStr();
+  for(let d=1; d<=days; d++){
+    const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const spent = spendOn(ds);
+    let cls = 'calDay';
+    if(spent > 0){
+      cls += ' has ' + (spent <= state.dailyLimit ? 'under' : 'over');
+    }
+    if(ds === today) cls += ' today';
+    if(ds === state.selectedDate) cls += ' sel';
+    const amountTxt = spent>0 ? '¥'+fmt(spent) : '';
+    html += `<div class="${cls}" data-date="${ds}"><span class="cd">${d}</span><span class="ca">${amountTxt}</span></div>`;
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.calDay[data-date]').forEach(el=>{
+    el.onclick = ()=>{
+      state.selectedDate = (state.selectedDate === el.dataset.date) ? null : el.dataset.date;
+      save(); renderAll();
+    };
+  });
+}
+
+/* ---------- 账目列表 ---------- */
 function renderBook(){
   const spent = todaySpend(), mspent = monthSpend();
   $('#dToday').textContent = '¥' + fmt(spent);
   $('#dMonth').textContent = '¥' + fmt(mspent);
   $('#dDailyLimit').textContent = '¥' + state.dailyLimit;
   $('#dMonthlyLimit').textContent = '¥' + state.monthlyLimit;
-  $('#dTodayState').innerHTML = spent <= state.dailyLimit
-    ? '<span class="under">✓ 没超</span>' : '<span class="over">✗ 超了</span>';
-  $('#dMonthState').innerHTML = mspent <= state.monthlyLimit
-    ? '<span class="under">✓ 没超</span>' : '<span class="over">✗ 超了</span>';
-  $('#inpDaily').value = state.dailyLimit;
-  $('#inpMonthly').value = state.monthlyLimit;
+  $('#dTodayState').innerHTML = spent <= state.dailyLimit ? '<span class="under">✓ 还没超</span>' : '<span class="over">✗ 超了</span>';
+  $('#dMonthState').innerHTML = mspent <= state.monthlyLimit ? '<span class="under">✓ 还没超</span>' : '<span class="over">✗ 超了</span>';
+
+  $('#settleHint').innerHTML = state.lastSettledDate
+    ? `今天还在进行中，<b>明天</b>才结算。上次结算到 <b>${state.lastSettledDate}</b>。`
+    : '今天还在进行中，<b>明天</b>才结算。';
+
+  $('#selLabel').textContent = state.selectedDate
+    ? `${state.selectedDate} 的明细（¥${fmt(spendOn(state.selectedDate))}）`
+    : '点某天看明细';
 
   const list = $('#txList');
-  const items = [...state.transactions].sort((a,b)=> b.ts-a.ts);
-  if(items.length === 0){
-    list.innerHTML = '<div class="empty">还没有账目。跟年糕说一句试试～</div>';
+  let items = [...state.transactions];
+  if(state.selectedDate) items = items.filter(t=>t.date===state.selectedDate);
+  items.sort((a,b)=> b.date.localeCompare(a.date) || b.ts-a.ts);
+
+  if(items.length===0){
+    list.innerHTML = `<div class="empty">${state.selectedDate?'这天没有账目':'还没有账目，跟猫说一句试试～'}</div>`;
     return;
   }
   list.innerHTML = items.map(t=>{
     const icon = (CATEGORIES.find(c=>c.key===t.category)||{icon:'📌'}).icon;
     return `<div class="tx" data-id="${t.id}">
       <span class="cico">${icon}</span>
-      <span class="tmain">
-        <div class="tnote">${escapeHtml(t.note||t.category)}</div>
-        <div class="tmeta">${t.category} · ${t.date}</div>
-      </span>
+      <span class="tmain"><div class="tnote">${esc(t.note||t.category)}</div><div class="tmeta">${t.category} · ${t.date}</div></span>
       <span class="tamt">-¥${fmt(t.amount)}</span>
-      <button class="del" title="删除">🗑</button>
+      <button class="del">🗑</button>
     </div>`;
   }).join('');
 
-  list.querySelectorAll('.del').forEach(btn=>{
-    btn.onclick = () => {
-      const id = btn.closest('.tx').dataset.id;
+  list.querySelectorAll('.del').forEach(b=>{
+    b.onclick = ()=>{
+      const id = b.closest('.tx').dataset.id;
       state.transactions = state.transactions.filter(t=>t.id!==id);
       save(); renderAll();
     };
   });
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ---------- 商城渲染 ---------- */
+function renderShop(){
+  $('#shopPoints').textContent = state.points;
+  $('#foodGrid').innerHTML = FOODS.map(f=>{
+    const own = state.inventory[f.id]||0;
+    const can = state.points >= f.price;
+    return `<div class="foodCard">
+      ${own>0?`<span class="owned">×${own}</span>`:''}
+      <div class="foodIcon">${FOOD_ICONS[f.id]}</div>
+      <div class="foodName">${f.name}</div>
+      <div class="foodDesc">${f.desc}</div>
+      <div class="foodEffect">饱腹+${f.hunger} · 成长+${f.exp}</div>
+      <button class="buyBtn" data-buy="${f.id}" ${can?'':'disabled'}>${f.price} 积分</button>
+    </div>`;
+  }).join('');
+
+  $('#foodGrid').querySelectorAll('[data-buy]').forEach(b=>{
+    b.onclick = ()=>buyFood(b.dataset.buy);
+  });
+}
+
+/* ---------- 喂猫渲染 ---------- */
+function renderFeed(){
+  const own = Object.keys(state.inventory).filter(k=>state.inventory[k]>0);
+  const box = $('#invList');
+  if(own.length===0){
+    box.innerHTML = '<div class="empty">还没有猫粮。<br>去「🛒 商城」用积分买点吧～</div>';
+    return;
+  }
+  box.innerHTML = own.map(fid=>{
+    const f = FOODS.find(x=>x.id===fid);
+    if(!f) return '';
+    return `<div class="invRow">
+      <div class="foodIcon">${FOOD_ICONS[fid]}</div>
+      <div class="invMain"><b>${f.name} ×${state.inventory[fid]}</b><div>饱腹+${f.hunger} · 成长+${f.exp}</div></div>
+      <button class="feedBtn" data-feed="${fid}">喂它</button>
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('[data-feed]').forEach(b=>{
+    b.onclick = ()=>{
+      const r = feedFood(b.dataset.feed);
+      if(!r) return;
+      const w = $('#catWrap');
+      w.classList.add('pop');
+      setTimeout(()=>w.classList.remove('pop'), 340);
+      addCatMsg(`吃掉了「${r.name}」！饱腹 +${r.hunger}，成长 +${r.exp}`);
+      if(r.lvUp) addCatMsg(`✨ ${state.pet.name} 升级了！现在是 Lv.${r.level}`);
+      save(); renderAll();
+    };
+  });
+}
+
+/* ---------- 设置 ---------- */
+function renderSetting(){
+  $('#setName').value = state.pet.name;
+  $('#setDaily').value = state.dailyLimit;
+  $('#setMonthly').value = state.monthlyLimit;
 }
 
 function renderAll(){
   tickPet();
   renderPet();
   renderChat();
+  renderCalendar();
   renderBook();
+  renderShop();
+  renderFeed();
+  renderSetting();
 }
 
 /* ---------- 交互 ---------- */
-function appendMe(text){ addMsg('me', text); }
-
 function handleSend(){
   const inp = $('#input');
   const text = inp.value.trim();
@@ -641,35 +878,27 @@ function handleSend(){
   autoGrow();
   $('#send').disabled = true;
 
-  appendMe(text);
-
+  addMsg('me', text);
   const r = parseMessage(text);
-  if(r.kind === 'nontx'){
-    addCatMsg('这句我就不记账啦，听起来不像是花钱。');
-  } else if(r.kind === 'needAmount'){
-    addCatMsg('花了多少钱呀？告诉我数字我就记上。');
-  } else if(r.kind === 'tx'){
+  if(r.kind==='nontx') addCatMsg('这句我就不记账啦，听起来不像是花钱。');
+  else if(r.kind==='needAmount') addCatMsg('花了多少钱呀？告诉我数字我就记上。');
+  else if(r.kind==='tx'){
     state.pending = r;
-    addCatMsg(r.items.length > 1
-      ? `听懂了 ${r.items.length} 笔，确认一下？`
-      : '听懂了，确认一下？');
-  } else {
-    addCatMsg('嗯？再说具体点～');
-  }
+    addCatMsg(r.items.length>1 ? `听懂了 ${r.items.length} 笔，确认一下？` : '听懂了，确认一下？');
+  } else addCatMsg('嗯？再说具体点～');
   save(); renderAll();
 }
 
 function autoGrow(){
   const t = $('#input');
-  t.style.height = 'auto';
-  t.style.height = Math.min(90, t.scrollHeight) + 'px';
+  t.style.height='auto';
+  t.style.height = Math.min(88, t.scrollHeight)+'px';
   $('#send').disabled = !t.value.trim();
 }
 
 function openDrawer(id){
   document.querySelectorAll('.drawer').forEach(d=>{
-    if(d.id===id) d.classList.add('open');
-    else d.classList.remove('open');
+    if(d.id===id) d.classList.add('open'); else d.classList.remove('open');
   });
 }
 function closeDrawers(){
@@ -677,75 +906,118 @@ function closeDrawers(){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('on'));
   document.querySelector('#tabs button[data-tab="chat"]').classList.add('on');
 }
+function gotoDrawer(tab){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('on'));
+  const btn = document.querySelector(`#tabs button[data-tab="${tab}"]`);
+  if(btn) btn.classList.add('on');
+  if(tab==='book') openDrawer('drawerBook');
+  else if(tab==='shop') openDrawer('drawerShop');
+  else if(tab==='feed') openDrawer('drawerFeed');
+  else if(tab==='setting') openDrawer('drawerSetting');
+  else closeDrawers();
+}
 
 /* ---------- 启动 ---------- */
 function init(){
   load();
   tickPet();
 
-  // 首次欢迎
-  if(state.messages.length === 0){
+  if(state.messages.length===0){
     state.messages.push({role:'cat', text:'喵～我是年糕。今天花了什么，跟我说说？'});
     state.messages.push({role:'cat', text:'比如：中午吃了碗牛肉面38块'});
   }
 
+  settlePastDays();
+
   $('#input').addEventListener('input', autoGrow);
   $('#input').addEventListener('keydown', e=>{
-    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); handleSend(); }
   });
   $('#send').onclick = handleSend;
 
   document.querySelectorAll('#tabs button').forEach(btn=>{
-    btn.onclick = () => {
-      const tab = btn.dataset.tab;
-      document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('on'));
-      btn.classList.add('on');
-      if(tab === 'book') openDrawer('drawerBook');
-      else if(tab === 'feed') openDrawer('drawerFeed');
-      else closeDrawers();
-    };
+    btn.onclick = ()=>gotoDrawer(btn.dataset.tab);
   });
   document.querySelectorAll('[data-close]').forEach(b=> b.onclick = closeDrawers);
 
-  // 喂猫
-  $('#btnFeed').onclick = () => {
-    if(feedPet()){
-      const cat = $('#cat');
-      cat.classList.add('eating');
-      setTimeout(()=>cat.classList.remove('eating'), 1600);
-      addCatMsg('好好吃！谢谢你～');
-      save(); renderAll();
-    } else { renderAll(); }
-  };
+  $('#statBudgetCard').onclick = ()=>gotoDrawer('setting');
+  $('#statPointsCard').onclick = ()=>gotoDrawer('shop');
 
-  // 点猫
-  $('#cat').onclick = () => {
-    const cat = $('#cat');
-    cat.classList.add('bounce');
-    setTimeout(()=>cat.classList.remove('bounce'), 200);
+  const rename = ()=>{
+    const n = prompt('给猫起个名字（1–8 个字）', state.pet.name);
+    if(n === null) return;
+    const name = n.trim().slice(0,8);
+    if(!name) return;
+    state.pet.name = name;
+    save(); renderAll();
+    addSysMsg(`猫改名成「${name}」啦`);
+  };
+  $('#btnRename').onclick = rename;
+  $('#petName').onclick = rename;
+
+  $('#catWrap').onclick = ()=>{
+    const w = $('#catWrap');
+    w.classList.add('pop');
+    setTimeout(()=>w.classList.remove('pop'), 340);
     const h = state.pet.hunger;
-    addCatMsg(h >= 70 ? '喵～（蹭蹭你的手）' : h >= 40 ? '喵？（歪头看你）' : '喵……（有点饿）');
+    addCatMsg(h>=70 ? `喵～（${state.pet.name}蹭蹭你的手）`
+            : h>=40 ? `喵？（${state.pet.name}歪头看你）`
+            : `喵……（${state.pet.name}有点饿了）`);
     save(); renderAll();
   };
 
-  // 改预算
-  const saveBudget = () => {
-    const d = parseFloat($('#inpDaily').value), m = parseFloat($('#inpMonthly').value);
-    if(d > 0) state.dailyLimit = d;
-    if(m > 0) state.monthlyLimit = m;
+  // 日历翻月
+  $('#calPrev').onclick = ()=>{
+    const [y,m] = state.calMonth.split('-').map(Number);
+    const d = new Date(y, m-2, 1);
+    state.calMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
     save(); renderAll();
   };
-  $('#inpDaily').onchange = saveBudget;
-  $('#inpMonthly').onchange = saveBudget;
+  $('#calNext').onclick = ()=>{
+    const [y,m] = state.calMonth.split('-').map(Number);
+    const d = new Date(y, m, 1);
+    state.calMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    save(); renderAll();
+  };
+  $('#btnAllDay').onclick = ()=>{ state.selectedDate = null; save(); renderAll(); };
+
+  // 设置保存
+  const doSave = ()=>{
+    const nm = $('#setName').value.trim().slice(0,8);
+    const d = parseFloat($('#setDaily').value);
+    const m = parseFloat($('#setMonthly').value);
+    const changed = [];
+    if(nm && nm !== state.pet.name){ state.pet.name = nm; changed.push('名字'); }
+    if(d>0 && d !== state.dailyLimit){ state.dailyLimit = d; changed.push('日预算'); }
+    if(m>0 && m !== state.monthlyLimit){ state.monthlyLimit = m; changed.push('月预算'); }
+    if(changed.length){
+      save(); renderAll();
+      $('#saveTip').textContent = '已保存：' + changed.join('、');
+      setTimeout(()=>{ $('#saveTip').textContent=''; }, 2000);
+    }
+  };
+  $('#setName').onchange = doSave;
+  $('#setDaily').onchange = doSave;
+  $('#setMonthly').onchange = doSave;
+  $('#setName').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doSave(); } });
+
+  $('#btnReset').onclick = ()=>{
+    if(confirm('确定要清空所有账目、积分、猫粮和猫的进度吗？不能撤销。')){
+      localStorage.removeItem(LS_KEY);
+      state = defaultState();
+      state.messages.push({role:'cat', text:'喵～我是年糕。今天花了什么，跟我说说？'});
+      save(); renderAll();
+    }
+  };
 
   autoGrow();
   renderAll();
+  save();
 }
 
 init();
 </script>
 <script>
-/* PWA：注册 Service Worker（离线可用） */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('./sw.js').catch(function () {});
